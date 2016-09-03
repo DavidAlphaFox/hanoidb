@@ -93,6 +93,7 @@ init([Name, Options]) ->
 
     case do_open(Name, Options, [exclusive]) of
         {ok, IdxFile} ->
+            %% 写入文件头
             ok = file:write(IdxFile, ?FILE_FORMAT),
             {ok, Bloom} = ?BLOOM_NEW(Size),
             BlockSize = hanoidb:get_opt(block_size, Options, ?NODE_SIZE),
@@ -201,7 +202,7 @@ archive_nodes(#state{ nodes=[], last_node_pos=LastNodePos, last_node_size=_LastN
                 LastNodePos
         end,
     Trailer = [ << 0:32/unsigned>> , BloomBin, << BloomSize:32/unsigned,  RootPos:64/unsigned >> ],
-
+    %% 写入文件尾部标签和bloom
     ok = file:write(IdxFile, Trailer),
     ok = file:datasync(IdxFile),
     ok = file:close(IdxFile),

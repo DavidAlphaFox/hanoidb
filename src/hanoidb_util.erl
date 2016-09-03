@@ -181,7 +181,7 @@ binary_encode_kv({Key, Value}) when is_binary(Value)->
 binary_encode_kv({Key, {Pos, Len}}) when Len < 16#ffffffff ->
     {Key, <<?TAG_POSLEN32, Pos:64/unsigned, Len:32/unsigned>>}.
 
-
+%% 计算KV的CRC32的值
 -spec crc_encapsulate_kv_entry(binary(), expvalue()) -> iolist().
 crc_encapsulate_kv_entry(Key, {Value, infinity}) ->
     crc_encapsulate_kv_entry(Key, Value);

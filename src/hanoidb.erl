@@ -288,8 +288,10 @@ init([Dir, Opts0]) ->
             {error, E} when E =:= enoent ->
                 ok = file:make_dir(Dir),
                 MinLevel = get_opt(top_level, Opts0, ?TOP_LEVEL),
+                %% 打开level文件
                 {ok, TopLevel} = hanoidb_level:open(Dir, MinLevel, undefined, Opts, self()),
                 MaxLevel = MinLevel,
+                %% 打开Nursery
                 {ok, Nursery} = hanoidb_nursery:new(Dir, MinLevel, MaxLevel, Opts),
                 {TopLevel, Nursery, MaxLevel}
         end,
@@ -434,6 +436,7 @@ handle_call(destroy, _From, State=#state{top=Top, nursery=Nursery }) ->
 
 -spec do_put(key(), value(), expiry(), #state{}) -> {ok, #state{}}.
 do_put(Key, Value, Expiry, State=#state{ nursery=Nursery, top=Top }) when Nursery =/= undefined ->
+    %% 向nursery中添加数据
     {ok, Nursery2} = hanoidb_nursery:add(Key, Value, Expiry, Nursery, Top),
     {ok, State#state{nursery=Nursery2}}.
 

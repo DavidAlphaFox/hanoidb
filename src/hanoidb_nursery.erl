@@ -43,7 +43,7 @@
 
 new(Directory, MinLevel, MaxLevel, Config) ->
     hanoidb_util:ensure_expiry(Config),
-
+    %% 打开日志文件
     {ok, File} = file:open(?LOGFILENAME(Directory),
                             [raw, exclusive, write, delayed_write, append]),
     {ok, #nursery{ log_file=File, dir=Directory, cache= gb_trees:empty(),
@@ -106,6 +106,7 @@ do_add(Nursery=#nursery{log_file=File, cache=Cache, total_size=TotalSize, count=
         if (KeyExpiryTime + DatabaseExpiryTime) == 0 ->
                 %% Both the database expiry and this key's expiry are unset or set to 0
                 %% (aka infinity) so never automatically expire the value.
+                %% 计算出一个item的crc32，并直接生成该item
                 { hanoidb_util:crc_encapsulate_kv_entry(Key, Value),
                   gb_trees:enter(Key, Value, Cache) };
            true ->
@@ -124,8 +125,9 @@ do_add(Nursery=#nursery{log_file=File, cache=Cache, total_size=TotalSize, count=
                 { hanoidb_util:crc_encapsulate_kv_entry(Key, {Value, Expiry}),
                   gb_trees:enter(Key,  {Value, Expiry}, Cache) }
         end,
-
+    %% 直接添加多文件尾部
     ok = file:write(File, Data),
+    %% 执行数据同步
     Nursery1 = do_sync(File, Nursery),
     {ok, Nursery2} = do_inc_merge(Nursery1#nursery{ cache=Cache2,
                                                     total_size=TotalSize + erlang:iolist_size(Data),
@@ -184,7 +186,8 @@ finish(#nursery{ dir=Dir, cache=Cache, log_file=LogFile, merge_done=DoneMerge,
         undefined -> ok;
         _ -> ok = file:close(LogFile)
     end,
-
+    %% 日志文件写满了
+    %% 生成一个新的btree文件
     case Count of
         N when N > 0 ->
             %% next, flush cache to a new BTree
@@ -302,7 +305,7 @@ transact1(Spec, Nursery1=#nursery{ log_file=File, cache=Cache0, total_size=Total
     Count = gb_trees:size(Cache2),
 
     do_inc_merge(Nursery2#nursery{ cache=Cache2, total_size=TotalSize+erlang:iolist_size(Data), count=Count }, length(Spec), Top).
-
+%% 开始增量合并
 do_inc_merge(Nursery=#nursery{ step=Step, merge_done=Done, min_level=MinLevel }, N, TopLevel) ->
     if Step+N >= ?INC_MERGE_STEP ->
             hanoidb_level:begin_incremental_merge(TopLevel, Step + N),
