@@ -277,13 +277,13 @@ init([Dir, Opts0]) ->
             N when is_integer(N), N >= 0 ->
                 [{expiry_secs, N}|Opts0]
         end,
-    hanoidb_util:ensure_expiry(Opts),
+    hanoidb_util:ensure_expiry(Opts), %% 确保有超时时间
 
     {Top, Nur, Max} =
         case file:read_file_info(Dir) of
-            {ok, #file_info{ type=directory }} ->
+            {ok, #file_info{ type=directory }} -> %% 如果是目录，打开levels
                 {ok, TopLevel, MinLevel, MaxLevel} = open_levels(Dir, Opts),
-                {ok, Nursery} = hanoidb_nursery:recover(Dir, TopLevel, MinLevel, MaxLevel, Opts),
+                {ok, Nursery} = hanoidb_nursery:recover(Dir, TopLevel, MinLevel, MaxLevel, Opts),%% 尝试数据恢复
                 {TopLevel, Nursery, MaxLevel};
             {error, E} when E =:= enoent ->
                 ok = file:make_dir(Dir),
@@ -299,16 +299,16 @@ init([Dir, Opts0]) ->
 
 
 open_levels(Dir, Options) ->
-    {ok, Files} = file:list_dir(Dir),
-    TopLevel0 = get_opt(top_level, Options, ?TOP_LEVEL),
+    {ok, Files} = file:list_dir(Dir), %% 获取所有文件
+    TopLevel0 = get_opt(top_level, Options, ?TOP_LEVEL), %% 默认level 0 的数量设置
 
     %% parse file names and find max level
     {MinLevel, MaxLevel} =
         lists:foldl(fun(FileName, {MinLevel, MaxLevel}) ->
                             case parse_level(FileName) of
                                 {ok, Level} ->
-                                    {erlang:min(MinLevel, Level),
-                                     erlang:max(MaxLevel, Level)};
+                                    {erlang:min(MinLevel, Level),%% 最小的level
+                                     erlang:max(MaxLevel, Level)}; %% 最大的level
                                 _ ->
                                     {MinLevel, MaxLevel}
                             end
@@ -318,11 +318,11 @@ open_levels(Dir, Options) ->
 
     %% remove old nursery data file
     NurseryFileName = filename:join(Dir, "nursery.data"),
-    _ = file:delete(NurseryFileName),
+    _ = file:delete(NurseryFileName), %% 删除救援文件
 
     %% Do enough incremental merge to be sure we won't deadlock in insert
     {TopLevel, MaxMerge} =
-        lists:foldl(fun(LevelNo, {NextLevel, MergeWork0}) ->
+        lists:foldl(fun(LevelNo, {NextLevel, MergeWork0}) ->%% 打开level文件，计算umerged的数量
                             {ok, Level} = hanoidb_level:open(Dir, LevelNo, NextLevel, Options, self()),
                             MergeWork = MergeWork0 + hanoidb_level:unmerged_count(Level),
                             {Level, MergeWork}
@@ -341,7 +341,7 @@ do_merge(TopLevel, Inc, N, MinLevel) ->
     do_merge(TopLevel, Inc, N-Inc, MinLevel).
 
 
-parse_level(FileName) ->
+parse_level(FileName) -> %% 分析level文件名字，得到目录名中的数量
     case re:run(FileName, "^[^\\d]+-(\\d+)\\.data$", [{capture,all_but_first,list}]) of
         {match,[StringVal]} ->
             {ok, list_to_integer(StringVal)};

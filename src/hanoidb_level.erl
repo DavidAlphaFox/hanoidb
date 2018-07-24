@@ -190,7 +190,7 @@ initialize2(State) ->
             file:delete(AFileName),
             file:delete(BFileName),
             ok = file:rename(MFileName, AFileName),
-
+            %% 将MFile重新命名为AFile
             {ok, IXA} = hanoidb_reader:open(AFileName, [random|State#state.opts]),
 
             case file:read_file_info(CFileName) of
@@ -788,7 +788,7 @@ begin_merge(State) ->
     ?log("starting merge~n", []),
 
     file:delete(XFileName),
-
+    %% 进行文件合并
     MergePID = hanoidb_merger:start(AFileName, BFileName, XFileName,
         ?BTREE_SIZE(State#state.level + 1),
         State#state.next =:= undefined,

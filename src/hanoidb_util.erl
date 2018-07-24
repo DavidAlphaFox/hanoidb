@@ -226,7 +226,7 @@ decode_kv_list(<<?BISECT_ENCODED, CRC:32/unsigned, Binary/binary>>) ->
        true ->
             {bisect, vbisect:from_orddict([])}
     end.
-
+%% 解码CRC
 -spec decode_crc_data(binary(), list(), list()) -> {ok, [kventry()]} | {partial, [kventry()], iolist()}.
 decode_crc_data(<<>>, [], Acc) ->
     {ok, lists:reverse(Acc)};

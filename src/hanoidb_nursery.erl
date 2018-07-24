@@ -63,7 +63,7 @@ recover(Directory, TopLevel, MinLevel, MaxLevel, Config)
 
 do_recover(Directory, TopLevel, MinLevel, MaxLevel, Config) ->
     %% repair the log file; storing it in nursery2
-    LogFileName = ?LOGFILENAME(Directory),
+    LogFileName = ?LOGFILENAME(Directory), %% 日志文件
     {ok, Nursery} = read_nursery_from_log(Directory, MinLevel, MaxLevel, Config),
     ok = finish(Nursery, TopLevel),
     %% assert log file is gone
@@ -86,8 +86,8 @@ read_nursery_from_log(Directory, MinLevel, MaxLevel, Config) ->
     {ok, LogBinary} = file:read_file(?LOGFILENAME(Directory)),
     Cache =
         case hanoidb_util:decode_crc_data(LogBinary, [], []) of
-            {ok, KVs} ->
-                fill_cache(KVs, gb_trees:empty());
+            {ok, KVs} -> %% 读取所有的KV
+                fill_cache(KVs, gb_trees:empty()); %% 缓存的到gb_tree上
             {partial, KVs, _ErrorData} ->
                 error_logger:info_msg("ignoring undecypherable bytes in ~p~n", [?LOGFILENAME(Directory)]),
                 fill_cache(KVs, gb_trees:empty())
