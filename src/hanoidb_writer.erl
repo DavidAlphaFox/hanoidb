@@ -225,7 +225,7 @@ append_node(Level, Key, Value, State=#state{ nodes=[ #node{level=Level2 } |_]=St
   when Level < Level2 -> %% 如果level别level2小
     append_node(Level, Key, Value, State#state{ nodes=[ #node{ level=(Level2 - 1) } | Stack] });
 append_node(Level, Key, Value, #state{ nodes=[ #node{level=Level, members=List, size=NodeSize}=CurrNode | RestNodes ], value_count=VC, tombstone_count=TC, bloom=Bloom }=State)
-  when Bloom /= undefined -> %% 两个level相同了，并且bloom为空
+  when Bloom /= undefined -> %% 两个level相同了，并且bloom不为空
     %% The top-of-stack node is at the level we wish to insert at.
 
     %% Assert that keys are increasing:
@@ -287,8 +287,8 @@ flush_node_buffer(#state{nodes=[#node{ level=Level, members=NodeMembers }|RestNo
     ok = file:write(State#state.index_file, Data),
 
     {FirstKey, _} = hd(OrderedMembers),
-    append_node(Level + 1, FirstKey, {NodePos, DataSize},
+    append_node(Level + 1, FirstKey, {NodePos, DataSize}, %% 0级别是叶子，中间层都需要记录节点位置和大小
                 State#state{ nodes          = RestNodes,
                              index_file_pos = NodePos + DataSize,
                              last_node_pos  = NodePos,
-                             last_node_size = DataSize }).
+                             last_node_size = DataSize }). %% 将最后的一个Key写到下一层的level上
