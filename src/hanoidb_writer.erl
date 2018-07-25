@@ -141,7 +141,7 @@ handle_cast({add, Key, Value}, State)
   when is_binary(Key), is_binary(Value) ->
     {ok, State2} = append_node(0, Key, Value, State),
     {noreply, State2}.
-
+%% 计算key的数量
 handle_call(count, _From, State = #state{ value_count=VC, tombstone_count=TC }) ->
     {ok, VC+TC, State};
 handle_call(close, _From, State) ->
@@ -190,7 +190,7 @@ do_open(Name, Options, OpenOpts) ->
 %% @doc flush pending nodes and write trailer
 archive_nodes(#state{ nodes=[], last_node_pos=LastNodePos, last_node_size=_LastNodeSize, bloom=Bloom, index_file=IdxFile }=State) ->
 
-    BloomBin = ?BLOOM_TO_BIN(Bloom),
+    BloomBin = ?BLOOM_TO_BIN(Bloom),%% 压缩bloom信息
     true = is_binary(BloomBin),
     BloomSize = byte_size(BloomBin),
     RootPos =
@@ -202,6 +202,7 @@ archive_nodes(#state{ nodes=[], last_node_pos=LastNodePos, last_node_size=_LastN
             _ ->
                 LastNodePos
         end,
+    %% 将数据打包写入文件末尾
     Trailer = [ << 0:32/unsigned>> , BloomBin, << BloomSize:32/unsigned,  RootPos:64/unsigned >> ],
     %% 写入文件尾部标签和bloom
     ok = file:write(IdxFile, Trailer),
