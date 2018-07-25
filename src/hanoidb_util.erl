@@ -127,7 +127,7 @@ compress(gzip, Bin) ->
     end;
 compress(none, Bin) ->
     {?NO_COMPRESSION, Bin}.
-
+%% 使用压缩算法进行数据解压缩
 uncompress(<<?NO_COMPRESSION, Data/binary>>) ->
     Data;
 uncompress(<<?SNAPPY_COMPRESSION, Data/binary>>) ->
@@ -154,10 +154,10 @@ encode_index_node(KVList, Method) ->
     end,
     {MethodName, OutData} = compress(Method, TermData),
     {ok, [MethodName | OutData]}.
-
+%% 解压缩根节点
 decode_index_node(Level, Data) ->
     TermData = uncompress(Data),
-    case decode_kv_list(TermData) of
+    case decode_kv_list(TermData) of %% 解压缩KV列表
         {ok, KVList} ->
             {ok, {node, Level, KVList}};
         {bisect, Binary} ->

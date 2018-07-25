@@ -95,13 +95,14 @@ init([Name, Options]) ->
         {ok, IdxFile} ->
             %% 写入文件头
             ok = file:write(IdxFile, ?FILE_FORMAT),
-            {ok, Bloom} = ?BLOOM_NEW(Size),
-            BlockSize = hanoidb:get_opt(block_size, Options, ?NODE_SIZE),
+            {ok, Bloom} = ?BLOOM_NEW(Size), %% 创建bloom
+            BlockSize = hanoidb:get_opt(block_size, Options, ?NODE_SIZE), %% 默认使用8KB页面
             {ok, #state{ name=Name,
-                         index_file_pos=?FIRST_BLOCK_POS, index_file=IdxFile,
+                         index_file_pos=?FIRST_BLOCK_POS, %% 文件的pos
+                         index_file=IdxFile,
                          bloom = Bloom,
                          block_size = BlockSize,
-                         compress = hanoidb:get_opt(compress, Options, none),
+                         compress = hanoidb:get_opt(compress, Options, none),%% 压缩方案
                          opts = Options
                        }};
         {error, _}=Error ->
@@ -217,14 +218,14 @@ archive_nodes(State) ->
     {ok, State2} = flush_node_buffer(State),
     archive_nodes(State2).
 
-
+%% 默认从第0级别开始往下加
 append_node(Level, Key, Value, State=#state{ nodes=[] }) ->
     append_node(Level, Key, Value, State#state{ nodes=[ #node{ level=Level } ] });
 append_node(Level, Key, Value, State=#state{ nodes=[ #node{level=Level2 } |_]=Stack })
-  when Level < Level2 ->
+  when Level < Level2 -> %% 如果level别level2小
     append_node(Level, Key, Value, State#state{ nodes=[ #node{ level=(Level2 - 1) } | Stack] });
 append_node(Level, Key, Value, #state{ nodes=[ #node{level=Level, members=List, size=NodeSize}=CurrNode | RestNodes ], value_count=VC, tombstone_count=TC, bloom=Bloom }=State)
-  when Bloom /= undefined ->
+  when Bloom /= undefined -> %% 两个level相同了，并且bloom为空
     %% The top-of-stack node is at the level we wish to insert at.
 
     %% Assert that keys are increasing:
@@ -273,7 +274,7 @@ append_node(Level, Key, Value, #state{ nodes=[ #node{level=Level, members=List, 
         false ->
             {ok, State2}
     end.
-
+%% 将数据写入文件
 flush_node_buffer(#state{nodes=[#node{ level=Level, members=NodeMembers }|RestNodes], compress=Compress, index_file_pos=NodePos } = State) ->
 
     OrderedMembers = lists:reverse(NodeMembers),

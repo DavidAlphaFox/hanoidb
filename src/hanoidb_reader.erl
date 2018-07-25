@@ -56,7 +56,7 @@ open(Name) ->
 -spec open(Name::string(), config()) -> {ok, read_file()}  | {error, any()}.
 open(Name, Config) ->
     case proplists:get_bool(sequential, Config) of
-        true ->
+        true -> %% 如果是有sequential选项，则使用ReadBuffer
             ReadBufferSize = hanoidb:get_opt(read_buffer_size, Config, 512 * 1024),
             case file:open(Name, [raw,read,{read_ahead, ReadBufferSize},binary]) of
                 {ok, File} ->
@@ -68,18 +68,18 @@ open(Name, Config) ->
         false ->
             {ok, File} =
                 case proplists:get_bool(folding, Config) of
-                    true ->
+                    true -> %% 有folding选项时也使用ReadBuffer
                         ReadBufferSize = hanoidb:get_opt(read_buffer_size, Config, 512 * 1024),
                         file:open(Name, [read, {read_ahead, ReadBufferSize}, binary]);
                     false ->
                         file:open(Name, [read, binary])
                 end,
-
+            %% 得到文件信息
             {ok, FileInfo} = file:read_file_info(Name),
-
+            %% 验证Macgic Tag
             %% read and validate magic tag
             {ok, ?FILE_FORMAT} = file:pread(File, 0, byte_size(?FILE_FORMAT)),
-
+            %% 文件结尾保存元信息
             %% read root position
             {ok, <<RootPos:64/unsigned>>} = file:pread(File, FileInfo#file_info.size - 8, 8),
             {ok, <<BloomSize:32/unsigned>>} = file:pread(File, FileInfo#file_info.size - 12, 4),

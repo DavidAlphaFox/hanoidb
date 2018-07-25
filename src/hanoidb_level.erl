@@ -167,7 +167,7 @@ initialize(State) ->
 initialize2(State) ->
 %    error_logger:info_msg("in ~p level=~p~n", [self(), State]),
 
-    AFileName = filename("A",State),
+    AFileName = filename("A",State), %% A-level.data
     BFileName = filename("B",State),
     CFileName = filename("C",State),
     MFileName = filename("M",State),
@@ -189,7 +189,7 @@ initialize2(State) ->
             %% is smaller than or equal to this level's files.
             file:delete(AFileName),
             file:delete(BFileName),
-            ok = file:rename(MFileName, AFileName),
+            ok = file:rename(MFileName, AFileName), %% 将M-level.data重命名为A-level.data
             %% 将MFile重新命名为AFile
             {ok, IXA} = hanoidb_reader:open(AFileName, [random|State#state.opts]),
 
@@ -203,7 +203,7 @@ initialize2(State) ->
                     main_loop(init_state(State#state{ a= IXA, b=undefined }))
             end;
 
-        {error, enoent} ->
+        {error, enoent} ->%% 没有merge文件
             case file:read_file_info(BFileName) of
                 {ok, _} ->
                     {ok, IXA} = hanoidb_reader:open(AFileName, [random|State#state.opts]),
@@ -217,7 +217,7 @@ initialize2(State) ->
                         {error, enoent} ->
                             undefined
                     end,
-
+                    %% 有A和B，可能有C文件，进行Merge
                     check_begin_merge_then_loop0(init_state(State#state{ a=IXA, b=IXB, c=IXC }));
 
                 {error, enoent} ->

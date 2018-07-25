@@ -308,7 +308,7 @@ transact1(Spec, Nursery1=#nursery{ log_file=File, cache=Cache0, total_size=Total
 %% 开始增量合并
 do_inc_merge(Nursery=#nursery{ step=Step, merge_done=Done, min_level=MinLevel }, N, TopLevel) ->
     if Step+N >= ?INC_MERGE_STEP ->
-            hanoidb_level:begin_incremental_merge(TopLevel, Step + N),
+            hanoidb_level:begin_incremental_merge(TopLevel, Step + N), %% 超过最大的key值，进行增量合并
             {ok, Nursery#nursery{ step=0, merge_done=Done + Step + N }};
        true ->
             {ok, Nursery#nursery{ step=Step + N }}
